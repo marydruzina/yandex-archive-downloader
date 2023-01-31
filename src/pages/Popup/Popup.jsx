@@ -59,7 +59,7 @@ const Popup = () => {
         const urlChunks = currentTab.url.split('/');
         const id = urlChunks[urlChunks.length - 1];
 
-        saveAs(response.data, `яндекс архив_${id}`);
+        saveAs(response.data, `${id}`);
       }
     });
   };
