@@ -1,0 +1,53 @@
+.popup {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  text-align: center;
+  /*height: 100%;*/
+  padding: 25px;
+  background-color: #fff;
+}
+
+.popup-title {
+  font-size: 18px;
+}
+
+.popup-download-btn {
+  font-family: Roboto, sans-serif;
+  font-weight: 0;
+  font-size: 14px;
+  color: #fff;
+  background-color: #fc3e1e;
+  padding: 10px 30px;
+  border: solid #fc3e1e 2px;
+  box-shadow: rgba(14, 30, 37, 0.12) 0 2px 4px 0, rgba(14, 30, 37, 0.32) 0 2px 16px 0;
+  border-radius: 50px;
+  transition : 1000ms;
+  transform: translateY(0);
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  cursor: pointer;
+  margin: 20px auto;
+}
+
+.popup-download-btn:hover {
+  transition : 1000ms;
+  padding: 10px 50px;
+  transform : translateY(-0px);
+  background-color: #fff;
+  color: #fc3e1e;
+  border: solid 2px #fc3e1e;
+}
+
+.popup-message {
+  padding: 15px;
+  font-size: 15px;
+}
+
+.popup-link {
+  display: block;
+  margin-bottom: 5px;
+}

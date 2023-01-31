@@ -1,0 +1,27 @@
+{
+  "manifest_version": 3,
+  "name": "Yandex Archive Downloader",
+  "description": "A chrome extension to download pictures from Yandex Archive",
+  "options_page": "options.html",
+  "background": {
+    "service_worker": "background.bundle.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": "icon-34.png"
+  },
+  "icons": {
+    "128": "icon-128.png"
+  },
+  "devtools_page": "devtools.html",
+  "web_accessible_resources": [
+    {
+      "resources": ["content.styles.css", "icon-128.png", "icon-34.png"],
+      "matches": []
+    }
+  ],
+  "host_permissions": ["https://ya.ru/archive/*"],
+  "permissions": [
+    "webRequest"
+  ]
+}
