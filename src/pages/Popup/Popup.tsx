@@ -1,24 +1,24 @@
 import React, { useEffect, useState } from 'react';
-import { getCurrentYandexTab } from '../../../utils/chrome-api';
+import { getCurrentTab, getCurrentYandexTab } from '../../../utils/chrome-api';
 import './Popup.css';
 
 type StatusType = 'request_start' | 'request_success' | 'request_fail' | 'download_success' | 'download_fail';
 
 const Popup = () => {
   const [showWarning, setShowWarning] = useState<boolean>(false);
-  const [currentTab, setCurrentTab] = useState<chrome.tabs.Tab | undefined>(undefined);
+  const [currentYandexTab, setCurrentYandexTab] = useState<chrome.tabs.Tab | undefined>(undefined);
   const [status, setStatus] = useState<StatusType | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [url, setUrl] = useState<string | null>(null);
 
   useEffect(() => {
     async function checkActiveTab() {
-      const currentYandexTab = await getCurrentYandexTab();
+      const openedYandexTab = await getCurrentYandexTab();
 
-      console.log('Popup opened on tab: ', currentYandexTab);
+      console.log('Popup opened on tab: ', openedYandexTab);
 
-      setCurrentTab(currentYandexTab);
-      setShowWarning(!currentYandexTab);
+      setCurrentYandexTab(openedYandexTab);
+      setShowWarning(!openedYandexTab);
     }
 
     checkActiveTab();
@@ -36,14 +36,22 @@ const Popup = () => {
     setMessage(status ? messagesByStatus[status] as string : null);
   }, [status]);
 
+  const onYandexArchiveLinkClick = async () => {
+    const currentTab = await getCurrentTab();
+
+    if (currentTab && currentTab.id) {
+      chrome.tabs.update(currentTab.id, { url: 'https://ya.ru/archive' });
+    }
+  };
+
   const onCollectClick = () => {
     // Clear before requesting
     setUrl(null);
     setStatus('request_start');
 
     // Collecting url from Page
-    if (currentTab && currentTab.id) {
-      chrome.tabs.sendMessage(currentTab.id, { type: 'getImageUrlFromPage' }, response => {
+    if (currentYandexTab && currentYandexTab.id) {
+      chrome.tabs.sendMessage(currentYandexTab.id, { type: 'getImageUrlFromPage' }, response => {
         console.log('Got response: ', response);
 
         setStatus(`request_${response.status}` as StatusType);
@@ -70,7 +78,7 @@ const Popup = () => {
       return;
     }
 
-    const urlChunks = currentTab && currentTab.url?.split('/');
+    const urlChunks = currentYandexTab && currentYandexTab.url?.split('/');
 
     if (!filename && Array.isArray(urlChunks)) {
       // '?' at the end of filename will crash 'chrome.downloads.download' api method
@@ -85,14 +93,16 @@ const Popup = () => {
       setStatus('download_fail');
       console.log(`Failed to download image by url "${url}" with filename "${filename}"`, e);
     }
-  }
+  };
 
   return (
     <div className="popup">
       <div className="popup-title">Yandex Archive Downloader</div>
 
       {showWarning &&
-        <div className="popup-warning-message">Сначала перейдите на страницу <a href="https://ya.ru/archive">Яндекс.Архива</a></div>
+        <div className="popup-warning-message">
+          Сначала перейдите на страницу <a href="https://ya.ru/archive" onClick={onYandexArchiveLinkClick}>Яндекс.Архива</a>
+        </div>
       }
 
       {!showWarning &&
