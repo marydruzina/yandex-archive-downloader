@@ -1,10 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { saveAs } from 'file-saver';
+import { getCurrentYandexTab } from '../../../utils/chrome-api';
 import './Popup.css';
 
 const Popup = () => {
   const [showWarning, setShowWarning] = useState(false);
-  const [requestingUrl, setRequestingUrl] = useState(false);
   const [currentTab, setCurrentTab] = useState(null);
   const [status, setStatus] = useState(null);
   const [message, setMessage] = useState(null);
@@ -12,9 +11,7 @@ const Popup = () => {
 
   useEffect(() => {
     async function checkActiveTab() {
-      const activeTabs = await chrome.tabs.query({ active: true });
-      const currentYandexTab = activeTabs.find(tab => 
-        (tab.url || '').includes('ya.ru/archive') || (tab.url || '').includes('yandex.ru/archive'));
+      const currentYandexTab = await getCurrentYandexTab();
 
       console.log('Popup opened on tab: ', currentYandexTab);
 
@@ -26,44 +23,52 @@ const Popup = () => {
   }, []);
 
   useEffect(() => {
-    let msg;
+    const messagesByStatus = {
+      'request_start': 'Поиск изображения...',
+      'request_success': 'Изображение найдено. Скачиваю...',
+      'request_fail': 'Не удалось найти изображение',
+      'download_success': 'Изображение успешно скачено',
+      'download_fail': <span>Не удалось скачать изображение. Воспользуйтесь <a href={url} download>ссылкой</a>.</span>
+    };
 
-    if (requestingUrl) {
-      msg = 'Поиск изображений...';
-    } else if (status) {
-      if (status === 'success') {
-        msg = 'Изображение найдено. Скачиваю...';
-      } else {
-        msg = 'Не удалось найти ни одного изображения';
-      }
-    }
-
-    setMessage(msg);
-  }, [requestingUrl, status, url]);
+    setMessage(status ? messagesByStatus[status] : null);
+  }, [status]);
 
   const onCollectClick = () => {
     // Clear before requesting
-    setUrl([]);
-    setStatus(null);
-    setRequestingUrl(true);
+    setUrl(null);
+    setStatus('request_start');
 
     // Collecting urls from Background
     chrome.runtime.sendMessage({ type: 'getImageUrl' }, response => {
       console.log('Got response: ', response);
 
-      setRequestingUrl(false);
-      setStatus(response.status);
+      setStatus(`request_${response.status}`);
       setUrl(response.data);
 
-      // Downloading image
-      if (response.data) {
-        const urlChunks = currentTab.url.split('/');
-        const id = urlChunks[urlChunks.length - 1];
-
-        saveAs(response.data, `${id}`);
-      }
+      downloadImage(response.data);
     });
   };
+
+  const downloadImage = (url) => {
+    if (!url) {
+      console.log('There is no image url to download');
+      return;
+    }
+
+    const urlChunks = currentTab.url.split('/');
+    // '?' at the end of filename will crash 'chrome.downloads.download' api method
+    const filename = (urlChunks[urlChunks.length - 1] || '').replace('?', '') + '.jpeg';
+
+    try {
+      chrome.downloads.download({ url, filename }, id => {
+        setStatus(id ? 'download_success' : 'download_fail');
+      });
+    } catch (e) {
+      setStatus('download_fail');
+      console.log(`Failed to download image by url "${url}" with filename "${filename}"`, e);
+    }
+  }
 
   return (
     <div className="popup">
@@ -78,12 +83,6 @@ const Popup = () => {
           <button className="popup-download-btn" onClick={onCollectClick}>Скачать</button>
 
           {message && <div className="popup-message">{message}</div>}
-
-          {url &&
-            <div className="popup-links">
-              <a className="popup-link" href={url} download>{url}</a>
-            </div>
-          }
         </>
       }
     </div>

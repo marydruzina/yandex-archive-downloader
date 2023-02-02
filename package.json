@@ -1,6 +1,6 @@
 {
   "name": "yandex-archive-downloader",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "A chrome extension to download images from Yandex Archive",
   "license": "MIT",
   "repository": {
@@ -39,7 +39,6 @@
     "eslint-plugin-react": "^7.32.0",
     "eslint-plugin-react-hooks": "^4.6.0",
     "file-loader": "^6.2.0",
-    "file-saver": "^2.0.5",
     "fs-extra": "^11.1.0",
     "html-loader": "^4.2.0",
     "html-webpack-plugin": "^5.5.0",
