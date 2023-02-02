@@ -24,5 +24,11 @@
   "permissions": [
     "webRequest",
     "downloads"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["https://ya.ru/archive/*", "https://yandex.ru/archive/*"],
+      "js": ["contentScript.bundle.js"]
+    }
   ]
 }
