@@ -10,7 +10,7 @@ chrome.webRequest.onCompleted.addListener(
     }
   },
   {
-    urls: ['https://ya.ru/archive/api/image*'],
+    urls: ['https://ya.ru/archive/api/image*', 'https://yandex.ru/archive/api/image*'],
     types: ['image']
   }
 );
@@ -32,7 +32,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 const getImageUrl = async (message) => {
   const activeTabs = await chrome.tabs.query({ active: true });
-  const currentYandexTab = activeTabs.find(tab => (tab.url || '').includes('ya.ru/archive'));
+  const currentYandexTab = activeTabs.find(tab => 
+    (tab.url || '').includes('ya.ru/archive') || (tab.url || '').includes('yandex.ru/archive'));
   let status = 'fail';
   let url;
 
