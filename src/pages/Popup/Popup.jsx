@@ -13,7 +13,8 @@ const Popup = () => {
   useEffect(() => {
     async function checkActiveTab() {
       const activeTabs = await chrome.tabs.query({ active: true });
-      const currentYandexTab = activeTabs.find(tab => (tab.url || '').includes('ya.ru/archive'));
+      const currentYandexTab = activeTabs.find(tab => 
+        (tab.url || '').includes('ya.ru/archive') || (tab.url || '').includes('yandex.ru/archive'));
 
       console.log('Popup opened on tab: ', currentYandexTab);
 
@@ -69,7 +70,7 @@ const Popup = () => {
       <div className="popup-title">Yandex Archive Downloader</div>
 
       {showWarning &&
-        <div className="popup-message">Перейдите на страницу Яндекс Архива</div>
+        <div className="popup-message">Сначала перейдите на страницу <a href="https://ya.ru/archive">Яндекс.Архива</a></div>
       }
 
       {!showWarning &&

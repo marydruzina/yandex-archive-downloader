@@ -20,7 +20,7 @@
       "matches": []
     }
   ],
-  "host_permissions": ["https://ya.ru/archive/*"],
+  "host_permissions": ["https://ya.ru/archive/*", "https://yandex.ru/archive/*"],
   "permissions": [
     "webRequest"
   ]
