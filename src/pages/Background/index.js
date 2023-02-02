@@ -1,3 +1,5 @@
+import { getCurrentYandexTab } from '../../../utils/chrome-api';
+
 let collectedUrls = new Map(); // { [tabId]: url }
 
 chrome.webRequest.onCompleted.addListener(
@@ -31,9 +33,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 });
 
 const getImageUrl = async (message) => {
-  const activeTabs = await chrome.tabs.query({ active: true });
-  const currentYandexTab = activeTabs.find(tab => 
-    (tab.url || '').includes('ya.ru/archive') || (tab.url || '').includes('yandex.ru/archive'));
+  const currentYandexTab = await getCurrentYandexTab();
   let status = 'fail';
   let url;
 
