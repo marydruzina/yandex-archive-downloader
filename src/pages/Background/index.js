@@ -2,26 +2,26 @@ import { getCurrentYandexTab } from '../../../utils/chrome-api';
 
 let collectedUrls = new Map(); // { [tabId]: url }
 
-chrome.webRequest.onCompleted.addListener(
-  (details) => {
-    console.log('Completed request: ', details);
-
-    if (details.url.endsWith('type=original')) {
-      collectedUrls.set(details.tabId, details.url);
-      console.log('All collected urls: ', collectedUrls);
-    }
-  },
-  {
-    urls: ['https://ya.ru/archive/api/image*', 'https://yandex.ru/archive/api/image*'],
-    types: ['image']
-  }
-);
+// chrome.webRequest.onCompleted.addListener(
+//   (details) => {
+//     console.log('Completed request: ', details);
+//
+//     if (details.url.endsWith('type=original')) {
+//       collectedUrls.set(details.tabId, details.url);
+//       console.log('All collected urls: ', collectedUrls);
+//     }
+//   },
+//   {
+//     urls: ['https://ya.ru/archive/api/image*', 'https://yandex.ru/archive/api/image*'],
+//     types: ['image']
+//   }
+// );
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   console.log('Got message: ', message);
 
   switch (message.type) {
-    case 'getImageUrl':
+    case 'getImageUrlFromBackground':
       getImageUrl(message).then(sendResponse);
       break;
 
@@ -53,5 +53,5 @@ const getImageUrl = async (message) => {
 
   console.log(`Sending response for ${message.type}: `, url);
 
-  return { type: message.type, status, data: url };
+  return { type: message.type, status, data: { url } };
 }

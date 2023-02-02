@@ -42,6 +42,11 @@
   border: solid 2px #fc3e1e;
 }
 
+.popup-warning-message {
+  font-size: 15px;
+  margin-top: 40px;
+}
+
 .popup-message {
   height: 50px;
   display: flex;
