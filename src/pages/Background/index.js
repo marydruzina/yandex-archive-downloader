@@ -12,8 +12,7 @@ chrome.webRequest.onCompleted.addListener(
     }
   },
   {
-    urls: ['https://ya.ru/archive/api/image*', 'https://yandex.ru/archive/api/image*'],
-    types: ['image']
+    urls: ['https://ya.ru/archive/api/image*', 'https://yandex.ru/archive/api/image*']
   }
 );
 
