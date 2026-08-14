@@ -4,10 +4,8 @@ import './Popup.css';
 
 const Popup = () => {
   const [showWarning, setShowWarning] = useState(false);
-  const [currentTab, setCurrentTab] = useState(null);
   const [status, setStatus] = useState(null);
   const [message, setMessage] = useState(null);
-  const [url, setUrl] = useState(null);
 
   useEffect(() => {
     async function checkActiveTab() {
@@ -15,7 +13,6 @@ const Popup = () => {
 
       console.log('Popup opened on tab: ', currentYandexTab);
 
-      setCurrentTab(currentYandexTab);
       setShowWarning(!currentYandexTab);
     }
 
@@ -24,51 +21,24 @@ const Popup = () => {
 
   useEffect(() => {
     const messagesByStatus = {
-      'request_start': 'Поиск изображения...',
-      'request_success': 'Изображение найдено. Скачиваю...',
-      'request_fail': 'Не удалось найти изображение',
+      'download_start': 'Получаю оригинал изображения...',
       'download_success': 'Изображение успешно скачено',
-      'download_fail': <span>Не удалось скачать изображение. Воспользуйтесь <a href={url} download>ссылкой</a>.</span>
+      'download_fail': 'Не удалось скачать изображение. Обновите страницу и попробуйте ещё раз.'
     };
 
     setMessage(status ? messagesByStatus[status] : null);
   }, [status]);
 
   const onCollectClick = () => {
-    // Clear before requesting
-    setUrl(null);
-    setStatus('request_start');
+    setStatus('download_start');
 
-    // Collecting urls from Background
-    chrome.runtime.sendMessage({ type: 'getImageUrl' }, response => {
+    // Background запускает скачивание оригинала в контексте страницы
+    chrome.runtime.sendMessage({ type: 'downloadImage' }, response => {
       console.log('Got response: ', response);
 
-      setStatus(`request_${response.status}`);
-      setUrl(response.data);
-
-      downloadImage(response.data);
+      setStatus(response?.status === 'success' ? 'download_success' : 'download_fail');
     });
   };
-
-  const downloadImage = (url) => {
-    if (!url) {
-      console.log('There is no image url to download');
-      return;
-    }
-
-    const urlChunks = currentTab.url.split('/');
-    // '?' at the end of filename will crash 'chrome.downloads.download' api method
-    const filename = (urlChunks[urlChunks.length - 1] || '').replace('?', '') + '.jpeg';
-
-    try {
-      chrome.downloads.download({ url, filename }, id => {
-        setStatus(id ? 'download_success' : 'download_fail');
-      });
-    } catch (e) {
-      setStatus('download_fail');
-      console.log(`Failed to download image by url "${url}" with filename "${filename}"`, e);
-    }
-  }
 
   return (
     <div className="popup">

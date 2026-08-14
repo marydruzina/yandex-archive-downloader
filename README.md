@@ -5,7 +5,7 @@ Chrome-плагин для скачивания файлов с сервиса �
 ![screenshoot](https://github.com/marydruzina/yandex-archive-downloader/blob/main/screenshoot.png)
 
 ### Установка
-* Скачать архив с плагином https://github.com/marydruzina/yandex-archive-downloader/blob/main/zip/yandex-archive-downloader-1.0.3.zip?raw=true и распаковать
+* Скачать архив с плагином https://github.com/marydruzina/yandex-archive-downloader/blob/main/zip/yandex-archive-downloader-1.0.4.zip?raw=true и распаковать
 * Открыть страницу расширений в вашем Chrome-подобном браузере (Chrome, Яндекс.Браузер, Arc)
 * Справа вверху переключить переключатель "Developer mode"
 * Нажать на той же странице крайнюю левую кнопку "Load unpacked" и выбрать распакованную папку. Плагин установлен
