@@ -14,6 +14,25 @@
   font-size: 18px;
 }
 
+.popup-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 12px 0 0;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.popup-filename {
+  width: 100%;
+  margin-top: 15px;
+  padding: 8px 10px;
+  font-size: 13px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+}
+
 .popup-download-btn {
   font-family: Roboto, sans-serif;
   font-weight: 0;
@@ -30,7 +49,7 @@
   flex-direction: row;
   align-items: center;
   cursor: pointer;
-  margin: 30px auto 20px;
+  margin: 20px auto 15px;
 }
 
 .popup-download-btn:hover {

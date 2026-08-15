@@ -32,6 +32,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       downloadImage(message).then(sendResponse);
       break;
 
+    case 'suggestFileName':
+      suggestFileName(message).then(sendResponse);
+      break;
+
     default:
       break;
   }
@@ -39,9 +43,58 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   return true;
 });
 
+// Выполняется в контексте страницы: собирает имя файла вида
+// "Москва Сретенский Сорок 1821 - скан 369" из заголовка, периода и номера скана.
+const suggestFileNameInPage = () => {
+  const bodyText = document.body.innerText || '';
+
+  // "ЦГА Москвы, фонд №203, опись №745, дело №234, скан №369" → 369
+  const scanMatch = bodyText.match(/скан №(\d+)/);
+  const scanNumber = scanMatch
+    ? scanMatch[1]
+    : (location.pathname.split('/').filter(Boolean).pop() || '');
+
+  // "1 января 1821 — 31 декабря 1821" → "1821" (или "1821-1830" для разных лет)
+  const periodMatch = bodyText.match(/\d{1,2}\s+[а-яё]+\s+(\d{4})\s*—\s*\d{1,2}\s+[а-яё]+\s+(\d{4})/i);
+  let years = '';
+  if (periodMatch) {
+    years = periodMatch[1] === periodMatch[2] ? periodMatch[1] : `${periodMatch[1]}-${periodMatch[2]}`;
+  }
+
+  // "МЕТРИЧЕСКИЕ КНИГИ МОСКВА СРЕТЕНСКИЙ СОРОК" → "Москва Сретенский Сорок"
+  let title = (document.querySelector('h1')?.textContent || '').trim();
+  const docTypes = /^(метрические книги|метрическая книга|ревизские сказки|ревизская сказка|исповедные ведомости|исповедная ведомость|описи|опись)\s+/i;
+  title = title.replace(docTypes, '').trim();
+  title = title
+    .split(/\s+/)
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+
+  const name = [title, years, scanNumber && `- скан ${scanNumber}`].filter(Boolean).join(' ');
+  return name || null;
+};
+
+const suggestFileName = async (message) => {
+  const currentYandexTab = await getCurrentYandexTab();
+  if (!currentYandexTab) return { type: message.type, status: 'fail' };
+
+  try {
+    const results = await chrome.scripting.executeScript({
+      target: { tabId: currentYandexTab.id },
+      func: suggestFileNameInPage
+    });
+
+    return { type: message.type, status: 'success', data: results?.[0]?.result || null };
+  } catch (e) {
+    console.log('Failed to suggest file name', e);
+    return { type: message.type, status: 'fail' };
+  }
+}
+
 // Выполняется в контексте страницы Яндекс.Архива: получает грант на оригинал,
-// скачивает картинку с токеном и отдаёт её пользователю как файл.
-const downloadOriginalInPage = async (nodeId) => {
+// скачивает картинку с токеном и отдаёт её пользователю как файл. По флагам
+// дополнительно сохраняет рядом текст разметки и список персон как JSON.
+const downloadOriginalInPage = async (nodeId, options) => {
   const findDocId = () => {
     // Fallback: достаём docId из данных Next.js, если запрос превью не был перехвачен
     const nextData = document.querySelector('#__NEXT_DATA__');
@@ -64,6 +117,29 @@ const downloadOriginalInPage = async (nodeId) => {
     }
 
     return found;
+  };
+
+  const saveBlob = (blob, filename) => {
+    const objectUrl = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = objectUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(objectUrl), 60000);
+  };
+
+  // GET-эндпоинты вида /archive/api/markup?id=…: при отсутствии данных отвечают { success: false }
+  const fetchJson = async (path, id) => {
+    const response = await fetch(`${path}?${new URLSearchParams({ id })}`, {
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include'
+    });
+    if (!response.ok) return null;
+
+    const data = await response.json();
+    return data && data.success !== false ? data : null;
   };
 
   try {
@@ -90,18 +166,30 @@ const downloadOriginalInPage = async (nodeId) => {
       return { status: 'fail', error: `image: status ${imageResponse.status}` };
     }
 
-    const blob = await imageResponse.blob();
-    const objectUrl = URL.createObjectURL(blob);
-    const link = document.createElement('a');
     const urlChunks = location.pathname.split('/').filter(Boolean);
-    link.href = objectUrl;
-    link.download = (urlChunks[urlChunks.length - 1] || 'image') + '.jpeg';
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    setTimeout(() => URL.revokeObjectURL(objectUrl), 60000);
+    const sanitizedName = (options?.fileName || '').replace(/[\\/:*?"<>|]/g, '').trim();
+    const baseName = sanitizedName || urlChunks[urlChunks.length - 1] || 'image';
+    saveBlob(await imageResponse.blob(), baseName + '.jpeg');
 
-    return { status: 'success' };
+    const saved = { image: true, text: null, persons: null };
+
+    if (options?.saveText) {
+      const markup = await fetchJson('/archive/api/markup', id);
+      saved.text = !!markup;
+      if (markup) {
+        saveBlob(new Blob([JSON.stringify(markup, null, 2)], { type: 'application/json' }), baseName + '.markup.json');
+      }
+    }
+
+    if (options?.savePersons) {
+      const structured = await fetchJson('/archive/api/structuredMarkup', id);
+      saved.persons = !!(structured && structured.entries?.length);
+      if (saved.persons) {
+        saveBlob(new Blob([JSON.stringify(structured, null, 2)], { type: 'application/json' }), baseName + '.persons.json');
+      }
+    }
+
+    return { status: 'success', saved };
   } catch (e) {
     return { status: 'fail', error: String(e) };
   }
@@ -122,7 +210,11 @@ const downloadImage = async (message) => {
     const results = await chrome.scripting.executeScript({
       target: { tabId: currentYandexTab.id },
       func: downloadOriginalInPage,
-      args: [nodeId]
+      args: [nodeId, {
+        saveText: !!message.saveText,
+        savePersons: !!message.savePersons,
+        fileName: message.fileName || null
+      }]
     });
 
     const result = results?.[0]?.result || { status: 'fail', error: 'no result' };
