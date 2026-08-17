@@ -21,10 +21,5 @@
     }
   ],
   "host_permissions": ["https://ya.ru/archive/*", "https://yandex.ru/archive/*"],
-  "permissions": [
-    "webRequest",
-    "downloads",
-    "*://ya.ru/archive/*",
-    "*://yandex.ru/archive/*"
-  ]
+  "permissions": ["webRequest", "scripting"]
 }
